@@ -315,16 +315,19 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 			print(f"Plotting delta(x)...")
 			plot_info_deltax_1D(rmag_center, delta_x)
 		elif n_dims == 2:
-			kx_min, kx_max = kmin, kmax
-			ky_min, ky_max = kmin, kmax
+			kx_min, kx_max = -1. * kNyq, kNyq - kfund
+			if rfft_bool:
+				ky_min, ky_max = 0., kNyq
+			else:
+				ky_min, ky_max = -1. * kNyq, kNyq - kfund
 			print(f"Plotting xi(m)...")
 			plot_info_xi_2D(Lbox, noise)
 			print(f"Plotting delta(k)...")
-			plot_info_deltak_2D(kx_min, kx_max, ky_min, ky_max, delta_k)
+			plot_info_deltak_2D(kx_min, kx_max, ky_min, ky_max, delta_k, rfft_bool)
 			print(f"Plotting delta(x)...")
 			plot_info_deltax_2D(Lbox, delta_x)
 			print(f"Plotting P(vec(k))...")
-			plot_info_Pk_2D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc)
+			plot_info_Pk_2D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc, rfft_bool)
 		else:
 			# 5% projection, 1% overlap
 			n_project = int(Ng * 0.05)

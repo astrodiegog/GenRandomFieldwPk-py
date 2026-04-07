@@ -62,7 +62,8 @@ def plot_Pk(n_dims, kvals, Pk, k_binned_norm, Pk_binned_norm, ks, As, ns, kmin, 
 	_ = ax.set_ylabel(rf"$P(k) [(\rm{{Mpc/h}})^{n_dims}]$")
 
 	ax2y = ax.secondary_yaxis('right', functions=(Pk2Deltak, Deltak2Pk))
-	_ = ax2y.set_ylabel(rf"$\Delta^2(k) = P(k) (2 \pi / L)^{n_dims}$", rotation=270, labelpad=30)
+	_ = ax2y.set_ylabel(rf"$\Delta^2(k) = P(k) (2 \pi / L)^{n_dims}$", 
+						rotation=270, labelpad=30)
 
 	ax2x = ax.secondary_xaxis('top', functions=(k2L, L2k))
 	_ = ax2x.set_xlabel(r"$L = 2 \pi / k\ [\rm{Mpc / h}]$", labelpad=15)
@@ -110,9 +111,9 @@ def plot_info_xi_1D(rmag_center, noise):
 	_ = plt.close()
 
 
-def plot_info_deltak_1D(k1, delta_k, rfft_bool):
+def plot_info_deltak_1D(k1, delta_k, rfft_bool=False):
 	'''
-	Plot the real-space noise for one-dimensional case
+	Plot the noise applied with a power spectrum in k-space
 
 	Args:
 		k1 (arr): k-mode bins along one dimension
@@ -209,9 +210,9 @@ def plot_info_xi_2D(Lbox, noise):
 	_ = plt.close()
 
 
-def plot_info_deltak_2D(kx_min, kx_max, ky_min, ky_max, delta_k):
+def plot_info_deltak_2D(kx_min, kx_max, ky_min, ky_max, delta_k, rfft_bool=False):
 	'''
-	Plot the real-space noise for two-dimensional case
+	Plot the noise applied with a power spectrum in k-space
 
 	Args:
 		kx_min (float): minimum k-mode along x-dimension
@@ -219,19 +220,23 @@ def plot_info_deltak_2D(kx_min, kx_max, ky_min, ky_max, delta_k):
 		ky_min (float): minimum k-mode along y-dimension
 		ky_max (float): maximum k-mode along y-dimension
 		delta_k (arr): noise with power spectrum applied to be plotted
+		rfft_bool (bool, optional): whether to use rFFT
 	Returns:
 		...
 	'''
 	fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(12,8))
 
-	# again shift to easily visualize
-	deltak_shifted = np.fft.fftshift(delta_k)
+	# shift to easily visualize
+	if rfft_bool:
+		deltak_shifted = np.fft.fftshift(delta_k, axes=0)
+	else:
+		deltak_shifted = np.fft.fftshift(delta_k)
 
 	ax_Re, ax_Imag = ax
 
-	img_Re = ax_Re.imshow(deltak_shifted.real, origin='lower', 
+	img_Re = ax_Re.imshow(deltak_shifted.real.T, origin='lower', 
 	                      extent=(kx_min, kx_max, ky_min, ky_max))
-	img_Imag = ax_Imag.imshow(deltak_shifted.imag, origin='lower', 
+	img_Imag = ax_Imag.imshow(deltak_shifted.imag.T, origin='lower', 
 	                      extent=(kx_min, kx_max, ky_min, ky_max))
 
 	divider = make_axes_locatable(ax_Re)
@@ -295,7 +300,7 @@ def plot_info_deltax_2D(Lbox, delta_x):
 	_ = plt.close()
 
 
-def plot_info_Pk_2D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc):
+def plot_info_Pk_2D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc, rfft_bool=False):
 	'''
 	Plot the calculated power spectrum for two-dimensional case
 
@@ -305,25 +310,35 @@ def plot_info_Pk_2D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc):
 		ky_min (float): minimum k-mode along y-dimension
 		ky_max (float): maximum k-mode along y-dimension
 		Pk_grid_calc (arr): calculated power spectrum applied to be plotted
+		rfft_bool (bool, optional): whether to use rFFT
 	Returns:
 		...
 	'''
 
 	fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8,8))
 
-	# again shift to easily visualize
-	Pk_grid_shifted = np.fft.fftshift(Pk_grid_calc)
+	# shift to easily visualize
+	if rfft_bool:
+		Pk_grid_shifted = np.fft.fftshift(Pk_grid_calc, axes=0)
+	else:
+		Pk_grid_shifted = np.fft.fftshift(Pk_grid_calc)
 
 	# take the log to easily visualize
 	log10_Pk_grid_shifted = np.log10(Pk_grid_shifted)
 
-	img = ax.imshow(log10_Pk_grid_shifted, origin='lower',
+	img = ax.imshow(log10_Pk_grid_shifted.T, origin='lower',
 	               extent=(kx_min, kx_max, ky_min, ky_max))
 
 	divider = make_axes_locatable(ax)
 	cbar_ax = divider.append_axes('right', size='5%', pad=0.1)
 	_ = plt.colorbar(img, cax=cbar_ax)
-	_ = cbar_ax.set_ylabel(rf"$\log_{{{10}}} [ P(k) / (\rm{{Mpc/h}})^{{{2}}} ]$", rotation=270)
+
+	if rfft_bool:
+		_ = cbar_ax.set_ylabel(rf"$\log_{{{10}}} [ P(k) / (\rm{{Mpc/h}})^{{{2}}} ]$", 
+								rotation=270, fontsize=20)
+	else:
+		_ = cbar_ax.set_ylabel(rf"$\log_{{{10}}} [ P(k) / (\rm{{Mpc/h}})^{{{2}}} ]$", 
+								rotation=270)
 	cbar_ax.yaxis.labelpad = 30
 
 	_ = ax.set_ylabel(r"$k_y\ [\rm{h / Mpc}]$")
