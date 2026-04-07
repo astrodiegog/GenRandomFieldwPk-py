@@ -329,22 +329,32 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 			print(f"Plotting P(vec(k))...")
 			plot_info_Pk_2D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc, rfft_bool)
 		else:
+			if rfft_bool:
+				Ng_kz = (Ng // 2) + 1
+			else:
+				Ng_kz = Ng
 			# 5% projection, 1% overlap
 			n_project = int(Ng * 0.05)
 			n_window = int(Ng * 0.01)
+
+			nk_project = int(Ng_kz * 0.05)
+			nk_window = int(Ng_kz * 0.01)
+
 			kx_min, kx_max = kmin, kmax
 			ky_min, ky_max = kmin, kmax
-			project_str = f"We are projecting across 5\% of {Ng} or {n_project} cells \n"
+			project_str = f"We are projecting across 5% of {Ng} or {n_project} cells \n"
 			project_str += f"\t corresponding to {n_project*dx:.4e} Mpc / h in real space"
 			print(project_str)
 			print(f"Plotting xi(m)...")
 			plot_info_xi_3D(Lbox, noise, n_project, n_window, Ng)
 			print(f"Plotting delta(k)...")
-			plot_info_deltak_3D(kx_min, kx_max, ky_min, ky_max, delta_k, n_project, n_window, Ng)
+			plot_info_deltak_3D(kx_min, kx_max, ky_min, ky_max, delta_k, 
+								nk_project, nk_window, Ng, rfft_bool)
 			print(f"Plotting delta(x)...")
 			plot_info_deltax_3D(Lbox, delta_x, n_project, n_window, Ng)
 			print(f"Plotting P(vec(k))...")
-			plot_info_Pk_3D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc, n_project, n_window, Ng)
+			plot_info_Pk_3D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc, 
+								nk_project, nk_window, Ng, rfft_bool)
 
 	print(f"Complete !")
 

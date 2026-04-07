@@ -13,7 +13,7 @@ def L2k(L):
 
 def plot_Pk(n_dims, kvals, Pk, k_binned_norm, Pk_binned_norm, ks, As, ns, kmin, kmax, Lbox):
 	'''
-	Plot the power spectrum for a 2D density fluctuation
+	Plot the power spectrum for a n_dim dimensional density fluctuation
 
 	Args:
 		n_dims (int): number of dimensions
@@ -49,14 +49,15 @@ def plot_Pk(n_dims, kvals, Pk, k_binned_norm, Pk_binned_norm, ks, As, ns, kmin, 
 	As_base10_exponent = int(np.log10(As))
 	As_base10_coeff = As / 10**(As_base10_exponent)
 	Pk_ks = np.interp(ks, kvals, Pk)  # [] = Length^(n_dims)
-
-	_ = ax.hlines(Pk_ks, color='g', ls='--', xmin = kmin, xmax = ks,
-	               label=rf'$A_s = {As_base10_coeff:.2f} \times 10^{{{As_base10_exponent:.0f}}}$'+ rf'$(\rm{{Mpc / h}})^{n_dims}$')
+	As_str = rf'$A_s = {As_base10_coeff:.2f} \times 10^{{{As_base10_exponent:.0f}}}$'
+	As_str += rf'$(\rm{{Mpc / h}})^{n_dims}$'
+	_ = ax.hlines(Pk_ks, color='g', ls='--', xmin = kmin, xmax = ks, label=As_str)
 
 	ks_base10_exponent = int(np.log10(ks))
 	ks_base10_coeff = ks / 10**(ks_base10_exponent)
-	_ = ax.vlines(ks, color='r', ls='--', ymin = 0., ymax = Pk_ks, 
-	               label=rf'$k_s = {ks_base10_coeff:.2f} \times 10^{{{ks_base10_exponent:.0f}}}\ $' + r'$\rm{h / Mpc}$')
+	ks_str = rf'$k_s = {ks_base10_coeff:.2f} \times 10^{{{ks_base10_exponent:.0f}}}\ $'
+	ks_str += r'$\rm{h / Mpc}$'
+	_ = ax.vlines(ks, color='r', ls='--', ymin = 0., ymax = Pk_ks, label=ks_str)
 
 	_ = ax.set_xlabel(r"$k\ [\rm{h / Mpc}]$")
 	_ = ax.set_ylabel(rf"$P(k) [(\rm{{Mpc/h}})^{n_dims}]$")
@@ -370,7 +371,8 @@ def plot_info_xi_3D(Lbox, noise, n_project, n_window, Ng):
 	# n_window = int(Ng * 0.01)
 
 	# Count the first plot from (0,n_project)
-	# The rest of the plots from will run from ((n_project-n_window),Ng) in chunks of (n_project-n_window) cells
+	# The rest of the plots from will run from ((n_project-n_window),Ng) in 
+	# chunks of (n_project-n_window) cells
 	n_plots = 2 + ((Ng - n_project) // (n_project - n_window))
 
 	noise_slab = np.zeros((Ng, Ng, n_project))
@@ -410,9 +412,9 @@ def plot_info_xi_3D(Lbox, noise, n_project, n_window, Ng):
 
 
 
-def plot_info_deltak_3D(kx_min, kx_max, ky_min, ky_max, delta_k, n_project, n_window, Ng):
+def plot_info_deltak_3D(kx_min, kx_max, ky_min, ky_max, delta_k, n_project, n_window, Ng, rfft_bool=False):
 	'''
-	Plot the real-space noise for two-dimensional case
+	Plot the noise applied with a power spectrum in k-space
 
 	Args:
 		kx_min (float): minimum k-mode along x-dimension
@@ -423,19 +425,25 @@ def plot_info_deltak_3D(kx_min, kx_max, ky_min, ky_max, delta_k, n_project, n_wi
 		n_project (int): number of cells to project through
 		n_window (int): number of cells to overlap between projections
 		Ng (int): number of cells along one dimension
+		rfft_bool (bool, optional): whether to use rFFT
 	Returns:
 		...
 	'''
-	# 5% projection, 1% overlap
-	# n_project = int(Ng * 0.05)
-	# n_window = int(Ng * 0.01)
+	if rfft_bool:
+		Ng_kz = (Ng // 2) + 1
+	else:
+		Ng_kz = Ng
 
 	# Count the first plot from (0,n_project)
-	# The rest of the plots from will run from ((n_project-n_window),Ng) in chunks of (n_project-n_window) cells
-	n_plots = 2 + ((Ng - n_project) // (n_project - n_window))
+	# The rest of the plots from will run from ((n_project-n_window),Ng_kz) in 
+	# chunks of (n_project-n_window) cells
+	n_plots = 2 + ((Ng_kz - n_project) // (n_project - n_window))
 
 	# shift to easily visualize
-	deltak_shifted = np.fft.fftshift(delta_k)
+	if rfft_bool:
+		deltak_shifted = np.fft.fftshift(delta_k, axes=(0,1))
+	else:
+		deltak_shifted = np.fft.fftshift(delta_k)
 
 	deltak_slab = np.zeros((Ng, Ng, n_project), dtype=np.complex128)
 
@@ -443,15 +451,15 @@ def plot_info_deltak_3D(kx_min, kx_max, ky_min, ky_max, delta_k, n_project, n_wi
 	    coord_start = i * (n_project - n_window)
 	    coord_end = coord_start + n_project
 	        
-	    if coord_end > Ng:
-	        deltak_slab[ : , : , : Ng - coord_start] = deltak_shifted[:, :, coord_start : Ng]
+	    if coord_end > Ng_kz:
+	        deltak_slab[ : , : , : Ng_kz - coord_start] = deltak_shifted[:, :, coord_start : Ng_kz]
 	        
-	        deltak_slab[ : , : , Ng - coord_start :] = deltak_shifted[:, :, : coord_end - Ng]
+	        deltak_slab[ : , : , Ng_kz - coord_start :] = deltak_shifted[:, :, : coord_end - Ng_kz]
 	    else:
 	        deltak_slab[:, :, :] = deltak_shifted[:,:, coord_start:coord_end]
 	    
 	    deltak_projection = np.sum(deltak_slab, axis=2)
-	    title_str = rf"Projecting cells $n_{{k,z}}={coord_start}$ to $n_{{k,z}}={coord_end % Ng}$"
+	    title_str = rf"Projecting cells $n_{{k,z}}={coord_start}$ to $n_{{k,z}}={coord_end % Ng_kz}$"
 	    
 	    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(12,8))
 
@@ -509,12 +517,9 @@ def plot_info_deltax_3D(Lbox, delta_x, n_project, n_window, Ng):
 		...
 	'''
 
-	# # 5% projection, 1% overlap
-	# n_project = int(Ng * 0.05)
-	# n_window = int(Ng * 0.01)
-
 	# Count the first plot from (0,n_project)
-	# The rest of the plots from will run from ((n_project-n_window),Ng) in chunks of (n_project-n_window) cells
+	# The rest of the plots from will run from ((n_project-n_window),Ng) in 
+	# chunks of (n_project-n_window) cells
 	n_plots = 2 + ((Ng - n_project) // (n_project - n_window))
 
 	delta_slab = np.zeros((Ng, Ng, n_project))
@@ -555,7 +560,7 @@ def plot_info_deltax_3D(Lbox, delta_x, n_project, n_window, Ng):
 
 
 
-def plot_info_Pk_3D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc, n_project, n_window, Ng):
+def plot_info_Pk_3D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc, n_project, n_window, Ng, rfft_bool=False):
 	'''
 	Plot the calculated power spectrum for two-dimensional case
 
@@ -568,20 +573,25 @@ def plot_info_Pk_3D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc, n_project, n_w
 		n_project (int): number of cells to project through
 		n_window (int): number of cells to overlap between projections
 		Ng (int): number of cells along one dimension
+		rfft_bool (bool, optional): whether to use rFFT
 	Returns:
 		...
 	'''
-
-	# # 5% projection, 1% overlap
-	# n_project = int(Ng * 0.05)
-	# n_window = int(Ng * 0.01)
+	if rfft_bool:
+		Ng_kz = (Ng // 2) + 1
+	else:
+		Ng_kz = Ng
 
 	# Count the first plot from (0,n_project)
-	# The rest of the plots from will run from ((n_project-n_window),Ng) in chunks of (n_project-n_window) cells
-	n_plots = 2 + ((Ng - n_project) // (n_project - n_window))
+	# The rest of the plots from will run from ((n_project-n_window),Ng_kz) in 
+	# chunks of (n_project-n_window) cells
+	n_plots = 2 + ((Ng_kz - n_project) // (n_project - n_window))
 
 	# again shift to easily visualize
-	Pk_grid_shifted = np.fft.fftshift(Pk_grid_calc)
+	if rfft_bool:
+		Pk_grid_shifted = np.fft.fftshift(Pk_grid_calc, axes=(0,1))
+	else:
+		Pk_grid_shifted = np.fft.fftshift(Pk_grid_calc)
 
 	Pk_grid_slab = np.zeros((Ng, Ng, n_project))
 
@@ -589,10 +599,10 @@ def plot_info_Pk_3D(kx_min, kx_max, ky_min, ky_max, Pk_grid_calc, n_project, n_w
 	    coord_start = i * (n_project - n_window)
 	    coord_end = coord_start + n_project
 	    
-	    if coord_end > Ng:
-	        Pk_grid_slab[ : , : , : Ng - coord_start] = Pk_grid_shifted[:, :, coord_start : Ng]
+	    if coord_end > Ng_kz:
+	        Pk_grid_slab[ : , : , : Ng_kz - coord_start] = Pk_grid_shifted[:, :, coord_start : Ng_kz]
 	        
-	        Pk_grid_slab[ : , : , Ng - coord_start :] = Pk_grid_shifted[:, :, : coord_end  - Ng]
+	        Pk_grid_slab[ : , : , Ng_kz - coord_start :] = Pk_grid_shifted[:, :, : coord_end  - Ng_kz]
 	    else:
 	        Pk_grid_slab[:, :, :] = Pk_grid_shifted[:,:, coord_start:coord_end]
 	        
