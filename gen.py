@@ -1,11 +1,5 @@
 import numpy as np
-# import matplotlib.pyplot as plt
-# from mpl_toolkits.axes_grid1 import make_axes_locatable
-
 from plotinfo import *
-
-# plt.style.use('dstyle')
-# plt.style.use('dstyle')
 
 
 def get_kmag(n_dims, Ng, dx_sample, rfft_bool=False):
