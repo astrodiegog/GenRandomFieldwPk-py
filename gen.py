@@ -1,19 +1,14 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+# import matplotlib.pyplot as plt
+# from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from plotinfo import *
 
-plt.style.use('dstyle')
-plt.style.use('dstyle')
+# plt.style.use('dstyle')
+# plt.style.use('dstyle')
 
-def k2L(k):
-    return 2. * np.pi / k
 
-def L2k(L):
-    return 2. * np.pi / L
-
-def get_kmag(n_dims, Ng, dx_sample):
+def get_kmag(n_dims, Ng, dx_sample, rfft_bool=False):
 	'''
 	Create a meshgrid of magnitude k values
 
@@ -22,20 +17,33 @@ def get_kmag(n_dims, Ng, dx_sample):
 		Ng (int): number of cells along one dimension
 		dx_sample (float): sampling of grid in real space
 			equivalent to 1/(2 k_Nyq)
+		rfft_bool (bool, optional): whether to take rFFT
 	Returns:
 		(arr): array of dimensions n_dims with k magnitudes
 	'''
 
 	k1 = np.fft.fftfreq(Ng, d=dx_sample)
+	if rfft_bool:
+		k1_r = np.fft.rfftfreq(Ng, d=dx_sample)
 
 	if n_dims == 1:
-		kx = k1
+		if rfft_bool:
+			kx = k1_r
+		else:
+			kx = k1
 		k2 = kx**2
 	elif n_dims == 2:
-		kx, ky = np.meshgrid(k1, k1, indexing='ij')
+		if rfft_bool:
+			kx, ky = np.meshgrid(k1, k1_r, indexing='ij')
+		else:
+			kx, ky = np.meshgrid(k1, k1, indexing='ij')
 		k2 = kx**2 + ky**2
 	elif n_dims == 3:
-		kx, ky, kz = np.meshgrid(k1, k1, k1, indexing='ij')
+		if rfft_bool:
+			kx, ky, kz = np.meshgrid(k1, k1, k1_r, indexing='ij')
+		else:
+			kx, ky, kz = np.meshgrid(k1, k1, k1, indexing='ij')
+
 		k2 = kx**2 + ky**2 + kz**2
 
 	kmag = np.sqrt(k2)
@@ -70,80 +78,6 @@ def get_rmag(n_dims, Ng, dx_sample):
 	rmag = np.sqrt(r2)
 
 	return rmag
-
-
-def plot_Pk(n_dims, kvals, Pk, k_binned_norm, Pk_binned_norm, ks, As, ns, kmin, kmax, Lbox):
-	'''
-	Plot the power spectrum for a 2D density fluctuation
-
-	Args:
-		n_dims (int): number of dimensions
-		kvals (arr): k-mode values for injected power spectrum
-		Pk (arr): defined power spectrum
-		k_binned_norm (arr): binned k-mode values measured
-		Pk_binned_norm (arr): binned power spectrum
-		ks (float): k-mode at which power spectrum amplitude is defined
-		As (float): power spectrum amplitude at ks
-		ns (float): log-slope of power spectrum
-		kmin (float): minimum k-mode probed
-		kmax (float): maximum k-mode probed
-		Lbox (float): length along one dimension
-	Returns:
-		...
-	'''
-
-	def Pk2Deltak(Pk):
-	    return Pk * (2. * np.pi / Lbox)**n_dims
-
-	def Deltak2Pk(Deltak):
-	    return Deltak / (2. * np.pi / Lbox)**n_dims
-
-
-	fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
-
-	_ = ax.plot(kvals, Pk, label='Input '+rf'$n_s={ns:.3f}$')
-	_ = ax.plot(k_binned_norm[:-1], Pk_binned_norm[:-1], label='Recovered')
-
-	_ = ax.axvline(kmin, c='k', ls='--')
-	_ = ax.axvline(kmax, c='k', ls='--')
-
-	As_base10_exponent = int(np.log10(As))
-	As_base10_coeff = As / 10**(As_base10_exponent)
-	Pk_ks = np.interp(ks, kvals, Pk)  # [] = Length^(n_dims)
-
-	_ = ax.hlines(Pk_ks, color='g', ls='--', xmin = kmin, xmax = ks,
-	               label=rf'$A_s = {As_base10_coeff:.2f} \times 10^{{{As_base10_exponent:.0f}}}$'+ rf'$(\rm{{Mpc / h}})^{n_dims}$')
-
-	ks_base10_exponent = int(np.log10(ks))
-	ks_base10_coeff = ks / 10**(ks_base10_exponent)
-	_ = ax.vlines(ks, color='r', ls='--', ymin = 0., ymax = Pk_ks, 
-	               label=rf'$k_s = {ks_base10_coeff:.2f} \times 10^{{{ks_base10_exponent:.0f}}}\ $' + r'$\rm{h / Mpc}$')
-
-	_ = ax.set_xlabel(r"$k\ [\rm{h / Mpc}]$")
-	_ = ax.set_ylabel(rf"$P(k) [(\rm{{Mpc/h}})^{n_dims}]$")
-
-	ax2y = ax.secondary_yaxis('right', functions=(Pk2Deltak, Deltak2Pk))
-	_ = ax2y.set_ylabel(rf"$\Delta^2(k) = P(k) (2 \pi / L)^{n_dims}$", rotation=270, labelpad=30)
-
-	ax2x = ax.secondary_xaxis('top', functions=(k2L, L2k))
-	_ = ax2x.set_xlabel(r"$L = 2 \pi / k\ [\rm{Mpc / h}]$", labelpad=15)
-
-	_ = ax.set_xscale('log')
-	_ = ax.set_yscale('log')
-
-	_ = ax.legend(fontsize=20)
-
-	_ = ax.grid(which='both', alpha=0.2)
-
-	_ = plt.tight_layout()
-
-	_ = plt.savefig('PowerSpectrum.png', dpi=512, bbox_inches='tight')
-
-	_ = plt.close()
-
-
-
-
 
 
 def main():
@@ -226,9 +160,20 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 """
 		print(mem_str)
 
+	rfft_str = "Since our starting random field is Real, we could take the rFFT \n"
+	rfft_str += "\t Instead of FFT to ease the memory constraints during calculations. \n"
+	rfft_str += "\t Would you like to use rFFT? (y/n)"
+	print(rfft_str)
+	rfft_in_bool = input()
+	assert (rfft_in_bool == 'y') or (rfft_in_bool == 'n')
+	if rfft_in_bool == 'y':
+		rfft_bool = True
+	else:
+		rfft_bool = False
+
 
 	dx_sample = dx / (2. * np.pi) # same as 1/(2 kNyq)
-	kmag = get_kmag(n_dims, Ng, dx_sample)
+	kmag = get_kmag(n_dims, Ng, dx_sample, rfft_bool)
 	# To avoid divide by zero errors later, set the zero mode to something small
 	zero_mode_indx = tuple([0] * n_dims)
 	kmag[zero_mode_indx] = 1.e-10
@@ -293,6 +238,7 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 	    mags = int(np.abs(ns) * np.log10(kmax / kmin))
 	    print(f"Spanning >{mags:.0f} orders of magnitude, expect round-off error.")
 
+
 	# Interpolate power spectrum onto the kmag grid
 	Pk_interp = np.interp(kmag, kvals, Pk)  # [] = Length^(n_dims)
 
@@ -308,7 +254,10 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 	    
 	# step 2 - Evaluate xi(k) with FFT and normalize to N**(-n_dims)
 	print(f"Evaluating xi(k)...")
-	noise_k = np.fft.fftn(noise) / variance # [] = Length^(n_dims/2)
+	if rfft_bool:
+		noise_k = np.fft.rfftn(noise) / variance # [] = Length^(n_dims/2)
+	else:
+		noise_k = np.fft.fftn(noise) / variance # [] = Length^(n_dims/2)
 
 	# step 3 - Multiply xi(k) by Transfer Function
 	print(f"Applying P(k) onto xi(k)...")
@@ -316,12 +265,18 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 	delta_k = noise_k * np.sqrt(Pk_interp) # [] = Length^(n_dims/2)
 
 	# step 4 - Evaluate delta(m) by taking iFFT
-	print(f"Evaluate delta(m) with iFFT...")
-	delta_x = np.fft.ifftn(delta_k).real # [] = Length^(-n_dims/2)
+	print(f"Evaluating delta(m) with iFFT...")
+	if rfft_bool:
+		delta_x = np.fft.irfftn(delta_k).real # [] = Length^(-n_dims/2)
+	else:
+		delta_x = np.fft.ifftn(delta_k).real # [] = Length^(-n_dims/2)
 
 	print(f"From delta(m), calculating P(k)...")
 	# Recover P(k) from delta(m)
-	delta_k_calc = np.fft.fftn(delta_x) # [] = Length^(n_dims/2)
+	if rfft_bool:
+		delta_k_calc = np.fft.rfftn(delta_x) # [] = Length^(n_dims/2)
+	else:
+		delta_k_calc = np.fft.fftn(delta_x) # [] = Length^(n_dims/2)
 	Pk_grid_calc = np.abs(delta_k_calc)**(2) # [] = Length^(n_dims)
 
 	print(f"Taking bins of fundamental mode...")
@@ -349,11 +304,14 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 
 		if n_dims == 1:
 			rmag_center = rmag + 0.5 * dx
-			k1 = np.fft.fftfreq(Ng, d=dx_sample)
+			if rfft_bool:
+				k1 = np.fft.rfftfreq(Ng, d=dx_sample)
+			else:
+				k1 = np.fft.fftfreq(Ng, d=dx_sample)
 			print(f"Plotting xi(m)...")
 			plot_info_xi_1D(rmag_center, noise)
 			print(f"Plotting delta(k)...")
-			plot_info_deltak_1D(k1, delta_k)
+			plot_info_deltak_1D(k1, delta_k, rfft_bool)
 			print(f"Plotting delta(x)...")
 			plot_info_deltax_1D(rmag_center, delta_x)
 		elif n_dims == 2:
