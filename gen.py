@@ -235,6 +235,7 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 
 	# Interpolate power spectrum onto the kmag grid
 	Pk_interp = np.interp(kmag, kvals, Pk)  # [] = Length^(n_dims)
+	Tk2_interp = (2. * np.pi / Lbox)**(n_dims) * Pk_interp # [] = 0
 
 	## Apply Pk onto random field
 	np.random.seed(123456) # set the random seed for reproducibility
@@ -244,34 +245,34 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 	print(f"Sampling xi(m) with variance=N^{n_dims}...")
 	variance = Ng**n_dims
 	std_dev = np.sqrt(variance)
-	noise = np.random.normal(size=noise_shape, scale=std_dev) # [] = Length^(-n_dims/2)
+	noise = np.random.normal(size=noise_shape, scale=std_dev) # [] = 0 != Length^(-n_dims/2)
 	    
 	# step 2 - Evaluate xi(k) with FFT and normalize to N**(-n_dims)
 	print(f"Evaluating xi(k)...")
 	if rfft_bool:
-		noise_k = np.fft.rfftn(noise) / variance # [] = Length^(n_dims/2)
+		noise_k = np.fft.rfftn(noise) / variance # [] = 0 != Length^(n_dims/2)
 	else:
-		noise_k = np.fft.fftn(noise) / variance # [] = Length^(n_dims/2)
+		noise_k = np.fft.fftn(noise) / variance # [] = 0 != Length^(n_dims/2)
 
 	# step 3 - Multiply xi(k) by Transfer Function
 	print(f"Applying P(k) onto xi(k)...")
-	Tk2_interp = (2. * np.pi / Lbox)**(n_dims) * Pk_interp # [] = 0
-	delta_k = noise_k * np.sqrt(Pk_interp) # [] = Length^(n_dims/2)
+	delta_k = noise_k * np.sqrt(Tk2_interp) # [] = 0 != Length^(n_dims/2)
 
 	# step 4 - Evaluate delta(m) by taking iFFT
 	print(f"Evaluating delta(m) with iFFT...")
 	if rfft_bool:
-		delta_x = np.fft.irfftn(delta_k).real # [] = Length^(-n_dims/2)
+		delta_x = np.fft.irfftn(delta_k).real # [] = 0 != Length^(-n_dims/2)
 	else:
-		delta_x = np.fft.ifftn(delta_k).real # [] = Length^(-n_dims/2)
+		delta_x = np.fft.ifftn(delta_k).real # [] = 0 != Length^(-n_dims/2)
 
 	print(f"From delta(m), calculating P(k)...")
 	# Recover P(k) from delta(m)
 	if rfft_bool:
-		delta_k_calc = np.fft.rfftn(delta_x) # [] = Length^(n_dims/2)
+		delta_k_calc = np.fft.rfftn(delta_x) # [] = 0 != Length^(n_dims/2)
 	else:
-		delta_k_calc = np.fft.fftn(delta_x) # [] = Length^(n_dims/2)
-	Pk_grid_calc = np.abs(delta_k_calc)**(2) # [] = Length^(n_dims)
+		delta_k_calc = np.fft.fftn(delta_x) # [] = 0 != Length^(n_dims/2)
+	Tk2_grid_calc = np.abs(delta_k_calc)**(2) # [] = 0
+	Pk_grid_calc = Tk2_grid_calc / (2. * np.pi / Lbox)**(n_dims) # [] = Length^(n_dims)
 
 	print(f"Taking bins of fundamental mode...")
 	# Bin into bins of fundamental mode
