@@ -41,7 +41,7 @@ def plot_Pk(n_dims, kvals, Pk, k_binned_norm, Pk_binned_norm, ks, As, ns, kmin, 
 	fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
 
 	_ = ax.plot(kvals, Pk, label='Input '+rf'$n_s={ns:.3f}$')
-	_ = ax.plot(k_binned_norm[:-1], Pk_binned_norm[:-1], label='Recovered')
+	_ = ax.plot(k_binned_norm, Pk_binned_norm, label='Recovered')
 
 	_ = ax.axvline(kmin, c='k', ls='--')
 	_ = ax.axvline(kmax, c='k', ls='--')
@@ -108,6 +108,43 @@ def plot_info_xi_1D(rmag_center, noise):
 	_ = plt.tight_layout()
 
 	_ = plt.savefig('Noise_1D.png', dpi=512, bbox_inches='tight')
+
+	_ = plt.close()
+
+def plot_info_xik_1D(k1, xi_k, rfft_bool=False):
+	'''
+	Plot the noise applied with a power spectrum in k-space
+
+	Args:
+		k1 (arr): k-mode bins along one dimension
+		xi_k (arr): noise in k-space
+		rfft_bool (bool, optional): whether to use rFFT
+	Returns:
+		...
+	'''
+	fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8,8))
+
+	if rfft_bool:
+		k1_shifted = k1
+		deltak_shifted = xi_k
+	else:
+		k1_shifted = np.fft.fftshift(k1)
+		xik_shifted = np.fft.fftshift(xi_k)
+
+	_ = ax.scatter(k1_shifted, xik_shifted.real)
+	_ = ax.scatter(k1_shifted, xik_shifted.imag)
+
+	_ = ax.axhline(y=0, c='k', ls='--')
+	_ = ax.axvline(x=0, c='k', ls='--')
+
+	_ = ax.set_xlabel(r"$k_x\ [\rm{h / Mpc}]$")
+	_ = ax.set_ylabel(r"$\tilde{\delta}(k)$")
+
+	_ = ax.grid(which='both', alpha=0.2)
+
+	_ = plt.tight_layout()
+
+	_ = plt.savefig('Noisek_1D.png', dpi=512, bbox_inches='tight')
 
 	_ = plt.close()
 

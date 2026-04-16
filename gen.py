@@ -257,7 +257,7 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 	# step 3 - Multiply xi(k) by Transfer Function
 	print(f"Applying P(k) onto xi(k)...")
 	delta_k = noise_k * np.sqrt(Tk2_interp) # [] = 0 != Length^(n_dims/2)
-
+	
 	# step 4 - Evaluate delta(m) by taking iFFT
 	print(f"Evaluating delta(m) with iFFT...")
 	if rfft_bool:
@@ -276,19 +276,29 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 
 	print(f"Taking bins of fundamental mode...")
 	# Bin into bins of fundamental mode
-	nk_bins = int(np.sqrt(n_dims) * Ng)
+	nk_bins = int(np.sqrt(n_dims) * (Ng / 2.) + 1.) # leave one bin for 0-th mode
 	Pk_binned = np.zeros(nk_bins, dtype=np.float64)
 	k_binned = np.zeros(nk_bins, dtype=np.float64)
+	ikbins = np.zeros(kmag.shape, dtype=np.int64)
 	counts = np.zeros(nk_bins, dtype=np.float64)
 
-	ikbins = (kmag / kfund).astype(np.int64) - 1
+	ikbins[:] = np.floor(kmag / kfund)
 
 	_ = np.add.at(Pk_binned, ikbins, Pk_grid_calc)
 	_ = np.add.at(k_binned, ikbins, kmag)
 	_ = np.add.at(counts, ikbins, 1)
 
+	# Remove bins with zero count
+	Pk_binned = Pk_binned[counts > 0]
+	k_binned = k_binned[counts > 0]
+	counts = counts[counts > 0]
+
 	Pk_binned_norm = Pk_binned / counts # [] = Length^(n_dims)
 	k_binned_norm = k_binned / counts
+
+	# Remove 0-th mode
+	Pk_binned_norm = Pk_binned_norm[1:]
+	k_binned_norm = k_binned_norm[1:]
 
 	print(f"Plotting P(k)...")
 	
@@ -305,6 +315,8 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 				k1 = np.fft.fftfreq(Ng, d=dx_sample)
 			print(f"Plotting xi(m)...")
 			plot_info_xi_1D(rmag_center, noise)
+			print(f"Plotting xi_k(m)...")
+			plot_info_xik_1D(k1, noise_k)
 			print(f"Plotting delta(k)...")
 			plot_info_deltak_1D(k1, delta_k, rfft_bool)
 			print(f"Plotting delta(x)...")
