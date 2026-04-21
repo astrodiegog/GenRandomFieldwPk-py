@@ -340,16 +340,22 @@ Hey big dawg, just a heads up that we're going to be creating a kmag and rmag
 				Ng_kz = (Ng // 2) + 1
 			else:
 				Ng_kz = Ng
-			# 5% projection, 1% overlap
-			n_project = int(Ng * 0.05)
+			proj_perc = 0.05
+			# proj_perc% projection, 1% overlap
+			n_project = int(Ng * proj_perc)
 			n_window = int(Ng * 0.01)
 
-			nk_project = int(Ng_kz * 0.05)
+			nk_project = int(Ng_kz * proj_perc)
 			nk_window = int(Ng_kz * 0.01)
+
+			while ((n_project == 0) or (n_project == 1)):
+				proj_perc *= 2.
+				n_project = int(Ng * proj_perc)
+				nk_project = int(Ng_kz * proj_perc)
 
 			kx_min, kx_max = kmin, kmax
 			ky_min, ky_max = kmin, kmax
-			project_str = f"We are projecting across 5% of {Ng} or {n_project} cells \n"
+			project_str = f"We are projecting across {proj_perc*100:.2f}% of {Ng} or {n_project} cells \n"
 			project_str += f"\t corresponding to {n_project*dx:.4e} Mpc / h in real space"
 			print(project_str)
 			print(f"Plotting xi(m)...")
